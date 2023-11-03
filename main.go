@@ -1,11 +1,17 @@
-package main
+package account
 
 import (
 	"errors"
 	"fmt"
+	"math"
 )
 
 type Name string
+
+type Transaction struct {
+	Description string
+	Amount      float64
+}
 
 type Account struct {
 	AccNumber     int
@@ -14,6 +20,7 @@ type Account struct {
 	InterestRate  float64
 	interestValue float64
 	age           float64
+	transactions  []Transaction
 }
 
 func NewAccount(accNumber int, name Name, initialBalance, interestRate float64) *Account {
@@ -24,12 +31,17 @@ func NewAccount(accNumber int, name Name, initialBalance, interestRate float64) 
 		InterestRate:  interestRate,
 		interestValue: 0.0,
 		age:           0.0,
+		transactions:  []Transaction{},
 	}
 }
 
 func (a *Account) Deposit(amount float64) {
 	if amount > 0 {
 		a.balance += amount
+		a.transactions = append(a.transactions, Transaction{
+			Description: "Deposit",
+			Amount:      amount,
+		})
 	}
 }
 
@@ -41,19 +53,35 @@ func (a *Account) Withdraw(amount float64) error {
 		return errors.New("Insufficient balance")
 	}
 	a.balance -= amount
+	a.transactions = append(a.transactions, Transaction{
+		Description: "Withdrawal",
+		Amount:      -amount,
+	})
 	return nil
 }
 
-func (a *Account) ChangeInterestRate(newRate float64) {
-	if newRate >= 0 {
-		a.InterestRate = newRate
-	}
+func (a *Account) UpdateAge(years float64) {
+	a.age += years
 }
 
 func (a *Account) SimpleInterest() {
 	interest := (a.balance * a.InterestRate * a.age) / 100
 	a.interestValue += interest
 	a.balance += interest
+}
+
+func (a *Account) CompoundInterest() {
+	compoundInterest := a.balance * (math.Pow(1+a.InterestRate/100, a.age) - 1)
+	a.interestValue += compoundInterest
+	a.balance += compoundInterest
+}
+
+func (a *Account) PrintTransactionHistory() {
+	fmt.Println("Transaction History:")
+	for _, transaction := range a.transactions {
+		fmt.Printf("Description: %s\n", transaction.Description)
+		fmt.Printf("Amount: $%.2f\n", transaction.Amount)
+	}
 }
 
 func (a *Account) Summary() {
